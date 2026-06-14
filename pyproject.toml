@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "token-risk-scanner"
+version = "0.1.0"
+description = "Token risk scanner: honeypot detection, mint authority, LP lock, holder concentration, tax analysis"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "httpx>=0.27.0",
+]
+
+[project.scripts]
+scanner = "scanner.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scanner"]
