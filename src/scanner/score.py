@@ -184,6 +184,17 @@ def score_token(token: TokenInfo) -> RiskReport:
     else:
         verdict = "MINIMAL RISK — Looks clean"
 
+    checks = (token.is_honeypot, token.is_mintable, token.is_ownership_renounced,
+              token.is_lp_locked, token.top10_holder_percent, token.buy_tax, token.sell_tax)
+    available = sum(value is not None for value in checks)
+    if available == 0:
+        verdict = "UNKNOWN — no core risk data available"
+    elif available < len(checks):
+        if risk_score == 0:
+            verdict = "INCOMPLETE — no risk points detected in available data"
+        else:
+            verdict += f" (incomplete data: {available}/{len(checks)} checks)"
+
     return RiskReport(
         token=token,
         risk_score=risk_score,

@@ -85,6 +85,7 @@ scanner scan polygon 0x5678...
 | Unverified source | 🟡 YELLOW | +5 |
 
 Score capped at 100. Verdict: 0-9 MINIMAL, 10-29 LOW, 30-59 MEDIUM, 60+ HIGH.
+Missing signals remain unknown. A scan without core risk data reports `UNKNOWN`; partial coverage is labeled incomplete, and provider failures are shown. Conflicting provider signals are merged conservatively. LP lock verification is not implemented by the bundled providers, so a live report normally has incomplete coverage.
 
 ## Architecture
 

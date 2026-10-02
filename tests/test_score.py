@@ -131,3 +131,4 @@ def test_empty_token_info():
     report = score_token(token)
     assert report.risk_score == 0
     assert len(report.flags) == 0
+    assert report.verdict.startswith("UNKNOWN")

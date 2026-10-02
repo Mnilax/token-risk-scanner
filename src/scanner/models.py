@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -61,6 +62,17 @@ class TokenInfo:
     total_supply: str | None = None
     creator_address: str | None = None
 
+    def __post_init__(self) -> None:
+        for name in ("is_honeypot", "is_mintable", "is_ownership_renounced", "is_lp_locked",
+                     "is_proxy", "is_open_source"):
+            value = getattr(self, name)
+            if value is not None and not isinstance(value, bool):
+                raise ValueError(f"{name} must be boolean or unknown")
+        for name in ("lp_lock_percent", "top10_holder_percent", "buy_tax", "sell_tax"):
+            value = getattr(self, name)
+            if value is not None and (not math.isfinite(value) or value < 0):
+                raise ValueError(f"{name} must be finite and nonnegative")
+
 
 @dataclass
 class RiskReport:
@@ -71,3 +83,4 @@ class RiskReport:
     flags: list[Flag] = field(default_factory=list)
     verdict: str = ""
     data_sources: list[str] = field(default_factory=list)
+    data_errors: list[str] = field(default_factory=list)

@@ -60,9 +60,6 @@ class HoneypotProvider(TokenProvider):
             buy_tax = sim_result.get("buyTax")
             sell_tax = sim_result.get("sellTax")
 
-        pair = data.get("pair", {})
-        liquidity = pair.get("liquidity")
-
         return TokenInfo(
             chain=chain,
             address=address,

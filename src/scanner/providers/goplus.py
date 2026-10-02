@@ -23,6 +23,7 @@ CHAIN_MAP = {
     "avalanche": "43114",
     "base": "8453",
     "solana": "solana",
+    "sol": "solana",
 }
 
 GOPLUS_BASE = "https://api.gopluslabs.io/api/v1"
@@ -30,9 +31,22 @@ GOPLUS_BASE = "https://api.gopluslabs.io/api/v1"
 
 def _parse_bool(val: str | int | None) -> bool | None:
     """GoPlus returns '1'/'0' strings for booleans."""
-    if val is None:
+    if val is True or val == "1" or val == 1:
+        return True
+    if val is False or val == "0" or val == 0:
+        return False
+    return None
+
+
+def _ownership_renounced(info: dict) -> bool | None:
+    # Reclaimability is a separate privilege, not proof that an active owner resigned.
+    if _parse_bool(info.get("can_take_back_ownership")) or _parse_bool(info.get("hidden_owner")):
+        return False
+    owner = info.get("owner_address")
+    if owner is None:
         return None
-    return str(val) == "1"
+    return owner.lower() in ("", "0x0000000000000000000000000000000000000000",
+                             "0x000000000000000000000000000000000000dead")
 
 
 class GoPlusProvider(TokenProvider):
@@ -78,17 +92,15 @@ class GoPlusProvider(TokenProvider):
             name=info.get("token_name"),
             symbol=info.get("token_symbol"),
             is_honeypot=_parse_bool(info.get("is_honeypot")),
-            honeypot_reason=info.get("honeypot_with_same_creator") and "Same creator deployed honeypots",
+            honeypot_reason="Same creator deployed honeypots" if _parse_bool(info.get("honeypot_with_same_creator")) else None,
             is_mintable=_parse_bool(info.get("is_mintable")),
-            is_ownership_renounced=_parse_bool(info.get("can_take_back_ownership")) is False
-            if info.get("can_take_back_ownership") is not None
-            else _parse_bool(info.get("owner_address") == "0x0000000000000000000000000000000000000000"),
+            is_ownership_renounced=_ownership_renounced(info),
             owner_address=info.get("owner_address"),
             is_lp_locked=None,  # Requires separate LP check
             top10_holder_percent=top10_pct,
             holder_count=int(info["holder_count"]) if info.get("holder_count") else None,
-            buy_tax=float(info["buy_tax"]) * 100 if info.get("buy_tax") else None,
-            sell_tax=float(info["sell_tax"]) * 100 if info.get("sell_tax") else None,
+            buy_tax=float(info["buy_tax"]) * 100 if info.get("buy_tax") not in (None, "") else None,
+            sell_tax=float(info["sell_tax"]) * 100 if info.get("sell_tax") not in (None, "") else None,
             is_proxy=_parse_bool(info.get("is_proxy")),
             is_open_source=_parse_bool(info.get("is_open_source")),
             total_supply=info.get("total_supply"),
@@ -106,19 +118,26 @@ class GoPlusProvider(TokenProvider):
         if not info:
             return TokenInfo(chain="solana", address=address)
 
+        metadata = info.get("metadata", {})
+        name = info.get("name")
+        if isinstance(name, dict):
+            metadata = name
+            name = metadata.get("name")
+        mintable = info.get("mintable")
+        if isinstance(mintable, dict):
+            mintable = mintable.get("status")
+        holders = info.get("holders", [])
+        top10_pct = sum(float(h.get("percent", 0)) * 100 for h in holders[:10]) if holders else None
         return TokenInfo(
             chain="solana",
             address=address,
-            name=info.get("token_name"),
-            symbol=info.get("token_symbol"),
-            is_mintable=_parse_bool(info.get("mintable")),
-            is_ownership_renounced=_parse_bool(info.get("authority_renounced")),
-            top10_holder_percent=float(info["top10_holder_rate"]) * 100
-            if info.get("top10_holder_rate")
-            else None,
+            name=name or info.get("token_name") or metadata.get("name"),
+            symbol=info.get("symbol") or info.get("token_symbol") or metadata.get("symbol"),
+            is_mintable=_parse_bool(mintable),
+            top10_holder_percent=top10_pct,
             holder_count=int(info["holder_count"]) if info.get("holder_count") else None,
             total_supply=info.get("total_supply"),
-            creator_address=info.get("creator_address"),
+            creator_address=info.get("creator") or info.get("creator_address"),
         )
 
     async def _request(self, url: str, params: dict) -> dict:

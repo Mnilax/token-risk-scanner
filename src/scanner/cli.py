@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -18,6 +16,10 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console()
+
+@app.callback()
+def commands():
+    """Inspect token risk signals from public providers."""
 
 SEVERITY_COLORS = {
     Severity.RED: "red",
@@ -51,7 +53,9 @@ def _render_report(report: RiskReport) -> None:
     )
 
     # Risk score
-    if report.risk_score >= 60:
+    if report.verdict.startswith(("UNKNOWN", "INCOMPLETE")):
+        score_color = "yellow"
+    elif report.risk_score >= 60:
         score_color = "red"
     elif report.risk_score >= 30:
         score_color = "yellow"
@@ -62,6 +66,8 @@ def _render_report(report: RiskReport) -> None:
         f"\n  Risk Score: [{score_color} bold]{report.risk_score}/100[/{score_color} bold]"
         f"  —  [{score_color}]{report.verdict}[/{score_color}]"
     )
+    for error in report.data_errors:
+        console.print(f"Source unavailable: {error}", markup=False, style="yellow")
 
     # Flags table
     if report.flags:
@@ -102,7 +108,7 @@ def scan(
     try:
         report = analyze_token_sync(chain, address)
         _render_report(report)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - CLI boundary reports provider failures.
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
 
