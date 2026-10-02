@@ -55,7 +55,7 @@ def _render_report(report: RiskReport) -> None:
     # Risk score
     if report.verdict.startswith(("UNKNOWN", "INCOMPLETE")):
         score_color = "yellow"
-    elif report.risk_score >= 60:
+    elif token.is_honeypot is True or report.risk_score >= 60:
         score_color = "red"
     elif report.risk_score >= 30:
         score_color = "yellow"

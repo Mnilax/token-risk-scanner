@@ -36,9 +36,32 @@ def test_honeypot():
         honeypot_reason="Cannot sell",
     )
     report = score_token(token)
-    assert report.risk_score >= 40
+    assert report.risk_score == 40
+    assert report.verdict.startswith("HIGH RISK")
+    assert "incomplete" in report.verdict
     reds = [f for f in report.flags if f.severity == Severity.RED]
     assert any("Honeypot" in f.label for f in reds)
+
+
+def test_confirmed_honeypot_overrides_other_clean_signals():
+    """A failed sell simulation remains critical despite otherwise clean data."""
+    token = TokenInfo(
+        chain="ethereum",
+        address="0xdead",
+        is_honeypot=True,
+        is_mintable=False,
+        is_ownership_renounced=True,
+        is_lp_locked=True,
+        lp_lock_percent=100.0,
+        top10_holder_percent=25.0,
+        buy_tax=0.0,
+        sell_tax=0.0,
+        is_proxy=False,
+        is_open_source=True,
+    )
+    report = score_token(token)
+    assert report.risk_score == 40
+    assert report.verdict == "HIGH RISK — Avoid"
 
 
 def test_mintable_token():

@@ -85,6 +85,7 @@ scanner scan polygon 0x5678...
 | Unverified source | 🟡 YELLOW | +5 |
 
 Score capped at 100. Verdict: 0-9 MINIMAL, 10-29 LOW, 30-59 MEDIUM, 60+ HIGH.
+Confirmed honeypot detection always gives a red `HIGH RISK` verdict, including when its +40 points are the only detected risk. The numeric score and signal weights remain unchanged.
 Missing signals remain unknown. A scan without core risk data reports `UNKNOWN`; partial coverage is labeled incomplete, and provider failures are shown. Conflicting provider signals are merged conservatively. LP lock verification is not implemented by the bundled providers, so a live report normally has incomplete coverage.
 
 ## Architecture

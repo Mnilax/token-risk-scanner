@@ -174,8 +174,8 @@ def score_token(token: TokenInfo) -> RiskReport:
     # Clamp
     risk_score = min(100, max(0, risk_points))
 
-    # Verdict
-    if risk_score >= 60:
+    # A confirmed honeypot is critical even below the aggregate score threshold.
+    if token.is_honeypot is True or risk_score >= 60:
         verdict = "HIGH RISK — Avoid"
     elif risk_score >= 30:
         verdict = "MEDIUM RISK — Proceed with caution"
